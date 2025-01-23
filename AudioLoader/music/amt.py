@@ -130,11 +130,15 @@ class AMTDataset(Dataset):
 
             if os.path.exists(latent_path):
                 with h5py.File(latent_path, 'r') as f:
-                    print(f.keys())
-                    # TODO: need to stack chunks
-                    # Assuming latents are stored in a dataset named 'dac_latents'
-                    data['dac_latents'] = torch.tensor(f['dac_latents'][()],
-                                                       dtype=torch.float32)
+                    print('----- new file -----')
+                    for chunk_id in f.keys():
+                        group = f[chunk_id]
+                        # Load latent variables. 0 is the chunk id
+                        dac_latents = group['dac_latents'][()]
+                        print(dac_latents.shape)
+
+                    # data['dac_latents'] = torch.tensor(dac_latents,
+                    #                                 dtype=torch.float32)
             else:
                 raise FileNotFoundError(
                     f"Latent file not found: {latent_path}")
