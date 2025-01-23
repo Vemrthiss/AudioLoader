@@ -123,6 +123,9 @@ class AMTDataset(Dataset):
         if self.latent_dir is not None:
             # Get relative path to match latent file structure
             rel_path = os.path.relpath(audio_path, self.root)
+            print(audio_path)
+            print(self.root)
+            print(os.path.splitext(rel_path))
             latent_path = os.path.join(self.latent_dir,
                                        os.path.splitext(rel_path)[0] + '.hdf5')
 
