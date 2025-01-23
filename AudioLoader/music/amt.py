@@ -128,6 +128,7 @@ class AMTDataset(Dataset):
 
             if os.path.exists(latent_path):
                 with h5py.File(latent_path, 'r') as f:
+                    print(f.keys())
                     # TODO: need to stack chunks
                     # Assuming latents are stored in a dataset named 'dac_latents'
                     data['dac_latents'] = torch.tensor(f['dac_latents'][()],
