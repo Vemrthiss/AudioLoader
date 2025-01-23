@@ -126,16 +126,11 @@ class AMTDataset(Dataset):
             rel_paths = rel_path.split('/')
             rel_path = '/'.join(rel_paths[1:]) # ignore the maestro-v2.0.0 folder
             latent_path = os.path.join(self.latent_dir, rel_path + '.hdf5')
-            print(latent_path)
 
             if os.path.exists(latent_path):
                 with h5py.File(latent_path, 'r') as f:
-                    print('----- new file -----')
                     tensors = [torch.tensor(f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
-                    dac_latents = torch.cat(tuple(tensors), dim=1)
-                    print(dac_latents.shape)
-                    # data['dac_latents'] = torch.tensor(dac_latents,
-                    #                                 dtype=torch.float32)
+                    data['dac_latents']  = torch.cat(tuple(tensors), dim=1)
             else:
                 raise FileNotFoundError(
                     f"Latent file not found: {latent_path}")
@@ -181,6 +176,10 @@ class AMTDataset(Dataset):
             step_end = step_begin + n_steps
             labels = pianoroll[step_begin:step_end, :]
             result['velocity'] = velocity_roll[step_begin:step_end, :]
+            print(labels.shape)
+            print(step_begin, step_end, n_steps)
+            print(pianoroll.shape)
+            print(data['dac_latents'].shape)
 
             # Add latent variables if they exist
             if 'dac_latents' in data:
