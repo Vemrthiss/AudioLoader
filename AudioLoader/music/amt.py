@@ -121,13 +121,12 @@ class AMTDataset(Dataset):
 
         # Load latent variables if latent_dir is provided
         if self.latent_dir is not None:
-            # Get relative path to match latent file structure
             rel_path = os.path.relpath(audio_path, self.root)
-            print(audio_path)
-            print(self.root)
-            print(os.path.splitext(rel_path))
-            latent_path = os.path.join(self.latent_dir,
-                                       os.path.splitext(rel_path)[0] + '.hdf5')
+            rel_path = os.path.splitext(rel_path)[0]
+            rel_paths = rel_path.split('/')
+            rel_path = '/'.join(rel_paths[1:]) # ignore the maestro-v2.0.0 folder
+            latent_path = os.path.join(self.latent_dir, rel_path + '.hdf5')
+            print(latent_path)
 
             if os.path.exists(latent_path):
                 with h5py.File(latent_path, 'r') as f:
