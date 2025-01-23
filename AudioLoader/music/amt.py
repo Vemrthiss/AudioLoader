@@ -42,7 +42,7 @@ This file is based on https://github.com/jongwook/onsets-and-frames
 
 TODA:
 1. Don't load everything on RAM, load only the files when needed (or only do it with MAESTRO?)
-2. 
+2.
 """
 
 
@@ -124,13 +124,15 @@ class AMTDataset(Dataset):
             rel_path = os.path.relpath(audio_path, self.root)
             rel_path = os.path.splitext(rel_path)[0]
             rel_paths = rel_path.split('/')
-            rel_path = '/'.join(rel_paths[1:]) # ignore the maestro-v2.0.0 folder
+            # ignore the maestro-v2.0.0 folder
+            rel_path = '/'.join(rel_paths[1:])
             latent_path = os.path.join(self.latent_dir, rel_path + '.hdf5')
 
             if os.path.exists(latent_path):
                 with h5py.File(latent_path, 'r') as f:
-                    tensors = [torch.tensor(f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
-                    data['dac_latents']  = torch.cat(tuple(tensors), dim=1)
+                    tensors = [torch.tensor(
+                        f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
+                    data['dac_latents'] = torch.cat(tuple(tensors), dim=1)
             else:
                 raise FileNotFoundError(
                     f"Latent file not found: {latent_path}")
@@ -184,12 +186,15 @@ class AMTDataset(Dataset):
             # Add latent variables if they exist
             if 'dac_latents' in data:
                 # TODO: fix this part of slicing
-                latent_hop = data['dac_latents'].shape[1] / \
-                    (audio_length / hop_size)
-                latent_start = int(step_begin * latent_hop)
-                latent_steps = int(n_steps * latent_hop)
-                result['dac_latents'] = data['dac_latents'][:,
-                                                            latent_start:latent_start + latent_steps]
+                # Calculate the ratio between latent and piano roll temporal resolutions
+                latent_to_roll_ratio = data['dac_latents'].shape[1] / pianoroll.shape[0]
+
+                # Calculate start and end points for latent slice
+                latent_start = int(step_begin * latent_to_roll_ratio)
+                latent_end = int(step_end * latent_to_roll_ratio)
+
+                # Slice the latents
+                result['dac_latents'] = data['dac_latents'][:, latent_start:latent_end]
                 print(result['dac_latents'].shape)
         else:
             result['audio'] = data['audio']
