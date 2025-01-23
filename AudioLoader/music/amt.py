@@ -185,25 +185,37 @@ class AMTDataset(Dataset):
 
             # Add latent variables if they exist
             if 'dac_latents' in data:
-                # TODO: fix this part of slicing
-                # Calculate the ratio between latent and piano roll temporal resolutions
-                latent_to_roll_ratio = data['dac_latents'].shape[1] / \
-                    pianoroll.shape[0]
-                target_latent_length = int(n_steps * latent_to_roll_ratio)
+                FIXED_LATENT_RATIO = 2.7
+                target_latent_length = int(n_steps * FIXED_LATENT_RATIO)
 
                 # Calculate start and end points for latent slice
-                latent_start = int(step_begin * latent_to_roll_ratio)
+                actual_ratio = data['dac_latents'].shape[1] / \
+                    pianoroll.shape[0]
+                latent_start = int(step_begin * actual_ratio)
                 latent_end = latent_start + target_latent_length
 
-                # Ensure we don't exceed the latent sequence length
+                # Ensure we don't exceed the latent sequence length and handle padding if needed
                 if latent_end > data['dac_latents'].shape[1]:
                     # If we would exceed the length, shift the window back
                     latent_end = data['dac_latents'].shape[1]
-                    latent_start = latent_end - target_latent_length
+                    latent_start = max(0, latent_end - target_latent_length)
 
-                # Slice the latents
-                result['dac_latents'] = data['dac_latents'][:,
-                    latent_start:latent_end]
+                    # If we still don't have enough frames, pad with zeros
+                    actual_length = latent_end - latent_start
+                    if actual_length < target_latent_length:
+                        latent_slice = data['dac_latents'][:,
+                                                           latent_start:latent_end]
+                        padding_length = target_latent_length - actual_length
+                        padding = torch.zeros(
+                            data['dac_latents'].shape[0], padding_length)
+                        result['dac_latents'] = torch.cat(
+                            [latent_slice, padding], dim=1)
+                    else:
+                        result['dac_latents'] = data['dac_latents'][:,
+                                                                    latent_start:latent_end]
+                else:
+                    result['dac_latents'] = data['dac_latents'][:,
+                                                                latent_start:latent_end]
                 print(result['dac_latents'].shape)
 
                 # Verify the shape
@@ -977,6 +989,7 @@ class MAESTRO(AMTDataset):
 #                 for group in groups:
 #                     wav_paths = glob(os.path.join(self.root, self.name_archive, group, f'*{self.ext_audio}'))
 #                     self._walker.extend(wav_paths)
+
 
     def files(self, group):
         metadata = json.load(
