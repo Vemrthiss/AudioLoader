@@ -131,12 +131,8 @@ class AMTDataset(Dataset):
             if os.path.exists(latent_path):
                 with h5py.File(latent_path, 'r') as f:
                     print('----- new file -----')
-                    for chunk_id in f.keys():
-                        group = f[chunk_id]
-                        # Load latent variables. 0 is the chunk id
-                        dac_latents = group['dac_latents'][()]
-                        print(dac_latents.shape)
-
+                    dac_latents = torch.cat([f[chunk_id]['dac_latents'][()] for chunk_id in f.keys()], dim=1)
+                    print(dac_latents.shape)
                     # data['dac_latents'] = torch.tensor(dac_latents,
                     #                                 dtype=torch.float32)
             else:
