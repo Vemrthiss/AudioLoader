@@ -178,13 +178,10 @@ class AMTDataset(Dataset):
             step_end = step_begin + n_steps
             labels = pianoroll[step_begin:step_end, :]
             result['velocity'] = velocity_roll[step_begin:step_end, :]
-            print(labels.shape)
-            print(step_begin, step_end, n_steps)
-            print(pianoroll.shape)
-            print(data['dac_latents'].shape)
 
             # Add latent variables if they exist
             if 'dac_latents' in data:
+                # TODO: make sure this slicing is sound
                 FIXED_LATENT_RATIO = 2.7
                 target_latent_length = int(n_steps * FIXED_LATENT_RATIO)
 
@@ -216,7 +213,6 @@ class AMTDataset(Dataset):
                 else:
                     result['dac_latents'] = data['dac_latents'][:,
                                                                 latent_start:latent_end]
-                print(result['dac_latents'].shape)
 
                 # Verify the shape
                 assert result['dac_latents'].shape[1] == target_latent_length, \
