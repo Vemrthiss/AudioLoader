@@ -190,6 +190,7 @@ class AMTDataset(Dataset):
                 latent_steps = int(n_steps * latent_hop)
                 result['dac_latents'] = data['dac_latents'][:,
                                                             latent_start:latent_start + latent_steps]
+                print(result['dac_latents'].shape)
         else:
             result['audio'] = data['audio']
             labels = pianoroll
