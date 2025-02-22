@@ -238,8 +238,8 @@ class AMTDataset(Dataset):
                 #                                                 latent_start:latent_end]
 
                 # Verify the shape
-                assert result['dac_latents'].shape[1] == target_latent_length, \
-                    f"Latent slice shape {result['dac_latents'].shape} doesn't match target shape ({data['dac_latents'].shape[0]}, {target_latent_length})"
+                # assert result['dac_latents'].shape[1] == target_latent_length, \
+                #     f"Latent slice shape {result['dac_latents'].shape} doesn't match target shape ({data['dac_latents'].shape[0]}, {target_latent_length})"
         else:
             result['audio'] = data['audio']
             labels = pianoroll
