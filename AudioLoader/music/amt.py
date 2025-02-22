@@ -126,16 +126,16 @@ class AMTDataset(Dataset):
             rel_paths = rel_path.split('/')
             # ignore the maestro-v2.0.0 folder
             rel_path = '/'.join(rel_paths[1:])
-            latent_path = os.path.join(self.latent_dir, rel_path + '.hdf5')
-            # latent_path = os.path.join(self.latent_dir, rel_path + '.pt')
+            # latent_path = os.path.join(self.latent_dir, rel_path + '.hdf5')
+            latent_path = os.path.join(self.latent_dir, rel_path + '.pt')
 
             if os.path.exists(latent_path):
-                # data['dac_latents'] = torch.load(latent_path)
-                with h5py.File(latent_path, 'r') as f:
-                    tensors = [torch.tensor(
-                        f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
-                    data['dac_latents'] = torch.cat(tuple(tensors), dim=1)
-                    print(f"dac_latents shape: {data['dac_latents'].shape}")
+                data['dac_latents'] = torch.load(latent_path)
+                # with h5py.File(latent_path, 'r') as f:
+                #     tensors = [torch.tensor(
+                #         f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
+                #     data['dac_latents'] = torch.cat(tuple(tensors), dim=1)
+                #     print(f"dac_latents shape: {data['dac_latents'].shape}")
             else:
                 raise FileNotFoundError(
                     f"Latent file not found: {latent_path}")
@@ -182,15 +182,16 @@ class AMTDataset(Dataset):
             labels = pianoroll[step_begin:step_end, :]
             result['velocity'] = velocity_roll[step_begin:step_end, :]
 
-            print("HELLO FROM DATASET")
-
             # Add latent variables if they exist
             if 'dac_latents' in data:
+                # audio_length = audio seconds * sr
                 print("audio length: ", audio_length)
                 print("audio path: ", data['path'])
+                # sequence_length is segment (in seconds) * hop_size
                 print("sequence length: ", sequence_length)
                 print("hop size: ", hop_size)
                 print("latent shape: ", data['dac_latents'].shape)
+                # pianoroll is (F, 88), F = audio_length / hop_size
                 print("pianoroll shape: ", pianoroll.shape)
                 print("labels shape: ", labels.shape)
 
