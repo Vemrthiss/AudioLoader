@@ -186,23 +186,24 @@ class AMTDataset(Dataset):
             # Add latent variables if they exist
             if 'dac_latents' in data:
                 # audio_length = audio seconds * sr
-                print("audio length: ", audio_length)
-                print("audio path: ", data['path'])
-                # sequence_length is segment (in seconds) * hop_size
-                print("sequence length: ", sequence_length)
-                print("hop size: ", hop_size)
-                print("data latent shape: ", data['dac_latents'].shape)
-                # pianoroll is (F, 88), F = audio_length / hop_size
-                print("pianoroll shape: ", pianoroll.shape)
-                print("labels shape: ", labels.shape)
-                print("label start", step_begin)
+                # print("audio length: ", audio_length)
+                # print("audio path: ", data['path'])
+                # # sequence_length is segment (in seconds) * hop_size
+                # print("sequence length: ", sequence_length)
+                # print("hop size: ", hop_size)
+                # print("data latent shape: ", data['dac_latents'].shape)
+                # # pianoroll is (F, 88), F = audio_length / hop_size
+                # print("pianoroll shape: ", pianoroll.shape)
+                # print("labels shape: ", labels.shape)
+                # print("label start", step_begin)
 
                 # slice latent
+                # we use the factor of 4, refer to the descript code
                 latent_start = step_begin // 4
                 num_latent_steps = n_steps // 4
                 result['dac_latents'] = data['dac_latents'][:,latent_start:latent_start + num_latent_steps]
-                print("result latent shape: ", result['dac_latents'].shape)
-                print("latent start", latent_start)
+                # print("result latent shape: ", result['dac_latents'].shape)
+                # print("latent start", latent_start)
 
                 # TODO: make sure this slicing is sound
                 # FIXED_LATENT_RATIO = 2.7
