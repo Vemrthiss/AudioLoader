@@ -130,7 +130,8 @@ class AMTDataset(Dataset):
             latent_path = os.path.join(self.latent_dir, rel_path + '.pt')
 
             if os.path.exists(latent_path):
-                data['dac_latents'] = torch.load(latent_path)
+                data['dac_latents'] = torch.load(
+                    latent_path, map_location=torch.device("cpu"))
                 # with h5py.File(latent_path, 'r') as f:
                 #     tensors = [torch.tensor(
                 #         f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
@@ -999,7 +1000,6 @@ class MAESTRO(AMTDataset):
 #                 for group in groups:
 #                     wav_paths = glob(os.path.join(self.root, self.name_archive, group, f'*{self.ext_audio}'))
 #                     self._walker.extend(wav_paths)
-
 
     def files(self, group):
         metadata = json.load(
