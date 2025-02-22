@@ -182,6 +182,8 @@ class AMTDataset(Dataset):
             labels = pianoroll[step_begin:step_end, :]
             result['velocity'] = velocity_roll[step_begin:step_end, :]
 
+            print("HELLO FROM DATASET")
+
             # Add latent variables if they exist
             if 'dac_latents' in data:
                 print("audio length: ", audio_length)
