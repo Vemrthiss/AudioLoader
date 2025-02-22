@@ -199,8 +199,8 @@ class AMTDataset(Dataset):
 
                 # slice latent
                 latent_start = step_begin // 4
-                latent_end = step_end // 4
-                result['dac_latents'] = data['dac_latents'][:,latent_start:latent_end]
+                num_latent_steps = n_steps // 4
+                result['dac_latents'] = data['dac_latents'][:,latent_start:latent_start + num_latent_steps]
                 print("result latent shape: ", result['dac_latents'].shape)
                 print("latent start", latent_start)
 
