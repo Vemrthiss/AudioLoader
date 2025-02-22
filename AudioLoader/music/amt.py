@@ -131,7 +131,7 @@ class AMTDataset(Dataset):
 
             if os.path.exists(latent_path):
                 data['dac_latents'] = torch.load(
-                    latent_path, map_location=torch.device("cpu"))
+                    latent_path, map_location=torch.device("cpu")).squeeze(0)
                 # with h5py.File(latent_path, 'r') as f:
                 #     tensors = [torch.tensor(
                 #         f[chunk_id]['dac_latents'][()], dtype=torch.float32) for chunk_id in f.keys()]
