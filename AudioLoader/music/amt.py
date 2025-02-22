@@ -191,43 +191,51 @@ class AMTDataset(Dataset):
                 # sequence_length is segment (in seconds) * hop_size
                 print("sequence length: ", sequence_length)
                 print("hop size: ", hop_size)
-                print("latent shape: ", data['dac_latents'].shape)
+                print("data latent shape: ", data['dac_latents'].shape)
                 # pianoroll is (F, 88), F = audio_length / hop_size
                 print("pianoroll shape: ", pianoroll.shape)
                 print("labels shape: ", labels.shape)
+                print("label start", step_begin)
+
+                # slice latent
+                latent_start = step_begin // 4
+                latent_end = step_end // 4
+                result['dac_latents'] = data['dac_latents'][:,latent_start:latent_end]
+                print("result latent shape: ", result['dac_latents'].shape)
+                print("latent start", latent_start)
 
                 # TODO: make sure this slicing is sound
-                FIXED_LATENT_RATIO = 2.7
-                target_latent_length = int(n_steps * FIXED_LATENT_RATIO)
+                # FIXED_LATENT_RATIO = 2.7
+                # target_latent_length = int(n_steps * FIXED_LATENT_RATIO)
 
-                # Calculate start and end points for latent slice
-                actual_ratio = data['dac_latents'].shape[1] / \
-                    pianoroll.shape[0]
-                latent_start = int(step_begin * actual_ratio)
-                latent_end = latent_start + target_latent_length
+                # # Calculate start and end points for latent slice
+                # actual_ratio = data['dac_latents'].shape[1] / \
+                #     pianoroll.shape[0]
+                # latent_start = int(step_begin * actual_ratio)
+                # latent_end = latent_start + target_latent_length
 
                 # Ensure we don't exceed the latent sequence length and handle padding if needed
-                if latent_end > data['dac_latents'].shape[1]:
-                    # If we would exceed the length, shift the window back
-                    latent_end = data['dac_latents'].shape[1]
-                    latent_start = max(0, latent_end - target_latent_length)
+                # if latent_end > data['dac_latents'].shape[1]:
+                #     # If we would exceed the length, shift the window back
+                #     latent_end = data['dac_latents'].shape[1]
+                #     latent_start = max(0, latent_end - target_latent_length)
 
-                    # If we still don't have enough frames, pad with zeros
-                    actual_length = latent_end - latent_start
-                    if actual_length < target_latent_length:
-                        latent_slice = data['dac_latents'][:,
-                                                           latent_start:latent_end]
-                        padding_length = target_latent_length - actual_length
-                        padding = torch.zeros(
-                            data['dac_latents'].shape[0], padding_length)
-                        result['dac_latents'] = torch.cat(
-                            [latent_slice, padding], dim=1)
-                    else:
-                        result['dac_latents'] = data['dac_latents'][:,
-                                                                    latent_start:latent_end]
-                else:
-                    result['dac_latents'] = data['dac_latents'][:,
-                                                                latent_start:latent_end]
+                #     # If we still don't have enough frames, pad with zeros
+                #     actual_length = latent_end - latent_start
+                #     if actual_length < target_latent_length:
+                #         latent_slice = data['dac_latents'][:,
+                #                                            latent_start:latent_end]
+                #         padding_length = target_latent_length - actual_length
+                #         padding = torch.zeros(
+                #             data['dac_latents'].shape[0], padding_length)
+                #         result['dac_latents'] = torch.cat(
+                #             [latent_slice, padding], dim=1)
+                #     else:
+                #         result['dac_latents'] = data['dac_latents'][:,
+                #                                                     latent_start:latent_end]
+                # else:
+                #     result['dac_latents'] = data['dac_latents'][:,
+                #                                                 latent_start:latent_end]
 
                 # Verify the shape
                 assert result['dac_latents'].shape[1] == target_latent_length, \
