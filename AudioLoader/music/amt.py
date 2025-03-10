@@ -1144,7 +1144,7 @@ class ChunkedDataset(Dataset):
             onset=chunk_onset,
             offset=chunk_offset
         )
-        print('Compare frame and latent shape before and after')
-        print(f'before frame {data["frame"].shape}, after {chunk_data["frame"].shape}')
-        print(f'before dac_latents {data["dac_latents"].shape}, after {chunk_data["dac_latents"].shape}')
+        # print('Compare frame and latent shape before and after')
+        # print(f'before frame {data["frame"].shape}, after {chunk_data["frame"].shape}')
+        # print(f'before dac_latents {data["dac_latents"].shape}, after {chunk_data["dac_latents"].shape}')
         return chunk_data
