@@ -205,42 +205,6 @@ class AMTDataset(Dataset):
                 # print("result latent shape: ", result['dac_latents'].shape)
                 # print("latent start", latent_start)
 
-                # TODO: make sure this slicing is sound
-                # FIXED_LATENT_RATIO = 2.7
-                # target_latent_length = int(n_steps * FIXED_LATENT_RATIO)
-
-                # # Calculate start and end points for latent slice
-                # actual_ratio = data['dac_latents'].shape[1] / \
-                #     pianoroll.shape[0]
-                # latent_start = int(step_begin * actual_ratio)
-                # latent_end = latent_start + target_latent_length
-
-                # Ensure we don't exceed the latent sequence length and handle padding if needed
-                # if latent_end > data['dac_latents'].shape[1]:
-                #     # If we would exceed the length, shift the window back
-                #     latent_end = data['dac_latents'].shape[1]
-                #     latent_start = max(0, latent_end - target_latent_length)
-
-                #     # If we still don't have enough frames, pad with zeros
-                #     actual_length = latent_end - latent_start
-                #     if actual_length < target_latent_length:
-                #         latent_slice = data['dac_latents'][:,
-                #                                            latent_start:latent_end]
-                #         padding_length = target_latent_length - actual_length
-                #         padding = torch.zeros(
-                #             data['dac_latents'].shape[0], padding_length)
-                #         result['dac_latents'] = torch.cat(
-                #             [latent_slice, padding], dim=1)
-                #     else:
-                #         result['dac_latents'] = data['dac_latents'][:,
-                #                                                     latent_start:latent_end]
-                # else:
-                #     result['dac_latents'] = data['dac_latents'][:,
-                #                                                 latent_start:latent_end]
-
-                # Verify the shape
-                # assert result['dac_latents'].shape[1] == target_latent_length, \
-                #     f"Latent slice shape {result['dac_latents'].shape} doesn't match target shape ({data['dac_latents'].shape[0]}, {target_latent_length})"
         else:
             result['audio'] = data['audio']
             labels = pianoroll
@@ -1078,3 +1042,109 @@ class MAESTRO(AMTDataset):
             Parallel(n_jobs=num_threads)(delayed(_resample)(wavfile, sr, output_format)
                                          for wavfile, tsvfile in tqdm(self._walker,
                                                                       desc=f'Resampling to {sr}Hz .{output_format} files'))
+
+class ChunkedDataset(Dataset):
+    """
+    Wraps an existing AMTDataset to split each audio file into N chunks.
+    Each chunk is treated as a separate sample in __getitem__.
+    """
+
+    def __init__(self, base_dataset: AMTDataset, num_chunks: int = 4):
+        super().__init__()
+        self.base_dataset = base_dataset
+        self.num_chunks = num_chunks
+
+        # We build a simple index mapping:
+        # For each item i in the base dataset, we produce
+        # (i, chunk_idx) for chunk_idx in [0 .. num_chunks-1].
+        self.index_map = []
+        for i in range(len(base_dataset)):
+            for c in range(num_chunks):
+                self.index_map.append((i, c))
+
+    def __len__(self):
+        # Total items = (original_dataset_length * num_chunks)
+        return len(self.index_map)
+
+    def __getitem__(self, idx):
+        """
+        1) Find which item (i) in the original dataset, and which chunk (c) we want.
+        2) Load the entire data dict from base_dataset (audio, pianoroll, latents, etc.)
+        3) Slice out just chunk c from that audio/pianoroll.
+        4) Return the chunked data.
+        """
+        real_index, chunk_idx = self.index_map[idx]
+        data = self.base_dataset[real_index]  # if you prefer the standard get_item path
+
+        # data has the following keys:
+        # path, audio, velocity, dac_latents, onset, offset, frame
+
+        # ----- chunk audio ------
+        audio = data["audio"]
+        total_len = audio.shape[0]  # total samples (assuming audio is 1D, shape [L] or [1, L])
+
+        # chunk size in samples
+        chunk_size = total_len // self.num_chunks
+        begin = chunk_idx * chunk_size
+        end = begin + chunk_size
+
+        # If the total length isn't perfectly divisible, the last chunk might need a different end
+        # For a simple approach, we can just do:
+        if (chunk_idx == self.num_chunks - 1):
+            end = total_len
+
+        chunk_audio = audio[begin:end]
+
+        # ----- chunk velocity ------
+        # velocity is 2d, first dim is time
+        total_len = data["velocity"].shape[0]
+
+        # chunk size in samples
+        chunk_size = total_len // self.num_chunks
+        begin = chunk_idx * chunk_size
+        end = begin + chunk_size
+        if (chunk_idx == self.num_chunks - 1):
+            end = total_len
+
+        chunk_velocity = data["velocity"][begin:end]
+
+        # ---- chunk dac_latents shape [C, T] ----
+        # velocity is 2d, second dim is time
+        total_len = data["dac_latents"].shape[1]
+
+        # chunk size in samples
+        chunk_size = total_len // self.num_chunks
+        begin = chunk_idx * chunk_size
+        end = begin + chunk_size
+        if (chunk_idx == self.num_chunks - 1):
+            end = total_len
+        chunk_latents = data["dac_latents"][:, begin:end]
+
+        # ---- chunk onset, offset, frame ----
+        # they share the same structure. 2d tensor, time is first dim
+        frames_total = data["frame"].shape[0]
+        # each chunk in 'frames' – if your hop_length is known, you can do an integer mapping
+        frames_chunk_size = frames_total // self.num_chunks
+        f_begin = chunk_idx * frames_chunk_size
+        f_end = f_begin + frames_chunk_size
+        if (chunk_idx == self.num_chunks - 1):
+            f_end = frames_total
+
+        chunk_frame = data["frame"][f_begin:f_end, :]
+        chunk_onset = data["onset"][f_begin:f_end, :]
+        chunk_offset = data["offset"][f_begin:f_end, :]
+
+        # Build a new dictionary with the chunked content
+        chunk_data = dict(
+            path=data["path"],
+            audio=chunk_audio,
+            frame=chunk_frame,
+            dac_latents=chunk_latents,
+            velocity=chunk_velocity,
+            onset=chunk_onset,
+            offset=chunk_offset
+        )
+        print('Compare frame and latent shape before and after')
+        print(f'before frame {data["frame"].shape}, after {chunk_data['frame'].shape}')
+        print(f'before dac_latents {data["dac_latents"].shape}, after {chunk_data['dac_latents'].shape}')
+        return chunk_data
